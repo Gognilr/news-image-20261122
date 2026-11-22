@@ -6,7 +6,7 @@
 // $MAKEFUN_OUTPUT_DIR/entry.png (default ./out), which is what the scorer
 // reads. It draws nothing: the page is composed by compose.py at build time
 // from the day's verified stories and a generated hero photograph.
-import { copyFileSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -39,9 +39,11 @@ if (isPng) {
 mkdirSync(outDir, { recursive: true });
 copyFileSync(src, join(outDir, "entry.png"));
 
-// Confirm the copy landed intact.
-if (statSync(join(outDir, "entry.png")).size !== bytes.length) {
-  throw new Error("copied entry.png does not match the source size");
+// Confirm the copy landed byte-identical to the source: a matching size
+// alone would not catch a truncated or corrupted copy.
+const copied = readFileSync(join(outDir, "entry.png"));
+if (!copied.equals(bytes)) {
+  throw new Error("copied entry.png is not byte-identical to the source");
 }
 
 console.log(`entry.png (${bytes.length} bytes) written to ${join(outDir, "entry.png")}`);
